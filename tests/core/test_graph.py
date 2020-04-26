@@ -494,7 +494,12 @@ def test_edges_include_edge_type(use_ilocs):
 
     expected = r | f
     if use_ilocs:
-        expected = {tuple(g.node_ids_to_ilocs(x[:2])) + (x[2],) for x in expected}
+        expected = {
+            tuple(g.node_ids_to_ilocs(x[:2]))
+            + tuple(g.edge_type_names_to_ilocs([x[2]]))
+            for x in expected
+        }
+
     expected = normalize_edges(expected, directed=False)
     assert (
         normalize_edges(
@@ -747,6 +752,13 @@ def example_unweighted_hom(is_directed=True):
     return StellarDiGraph(nodes, edges) if is_directed else StellarGraph(nodes, edges)
 
 
+def _edge_types_or_ilocs(graph, use_ilocs, names):
+    if use_ilocs:
+        return graph.edge_type_names_to_ilocs(names)
+
+    return names
+
+
 @pytest.mark.parametrize("use_ilocs", [True, False])
 @pytest.mark.parametrize("is_directed", [True, False])
 def test_neighbors_weighted_hin(is_directed, use_ilocs):
@@ -764,11 +776,12 @@ def test_neighbors_weighted_hin(is_directed, use_ilocs):
         zip(expected_nodes, expected_weights),
     )
 
+    edge_types = _edge_types_or_ilocs(graph, use_ilocs, ["AB"])
     expected_nodes = graph.node_ids_to_ilocs([2, 3]) if use_ilocs else [2, 3]
     expected_weights = [10.0, 10.0]
     assert_items_equal(
         graph.neighbors(
-            node, include_edge_weight=True, edge_types=["AB"], use_ilocs=use_ilocs
+            node, include_edge_weight=True, edge_types=edge_types, use_ilocs=use_ilocs
         ),
         zip(expected_nodes, expected_weights),
     )
@@ -793,9 +806,11 @@ def test_neighbors_unweighted_hom(is_directed, use_ilocs):
         graph.neighbors(node, include_edge_weight=True, use_ilocs=use_ilocs),
         zip(expected_nodes, expected_weights),
     )
+
+    edge_types = _edge_types_or_ilocs(graph, use_ilocs, ["AB"])
     assert_items_equal(
         graph.neighbors(
-            node, include_edge_weight=True, edge_types=["AB"], use_ilocs=use_ilocs
+            node, include_edge_weight=True, edge_types=edge_types, use_ilocs=use_ilocs
         ),
         [],
     )
@@ -821,6 +836,7 @@ def test_in_nodes_weighted_hin(use_ilocs):
     node = graph.node_ids_to_ilocs([1])[0] if use_ilocs else 1
     expected_nodes = graph.node_ids_to_ilocs([0, 0]) if use_ilocs else [0, 0]
     expected_weighted = zip(expected_nodes, [0.0, 1.0])
+    edge_types = _edge_types_or_ilocs(graph, use_ilocs, ["AB"])
 
     assert_items_equal(graph.in_nodes(node, use_ilocs=use_ilocs), expected_nodes)
     assert_items_equal(
@@ -829,7 +845,7 @@ def test_in_nodes_weighted_hin(use_ilocs):
     )
     assert_items_equal(
         graph.in_nodes(
-            node, include_edge_weight=True, edge_types=["AB"], use_ilocs=use_ilocs
+            node, include_edge_weight=True, edge_types=edge_types, use_ilocs=use_ilocs
         ),
         [],
     )
@@ -841,6 +857,7 @@ def test_in_nodes_unweighted_hom(use_ilocs):
     node = graph.node_ids_to_ilocs([1])[0] if use_ilocs else 1
     expected_nodes = graph.node_ids_to_ilocs([0, 0]) if use_ilocs else [0, 0]
     expected_weighted = zip(expected_nodes, [1, 1])
+    edge_types = _edge_types_or_ilocs(graph, use_ilocs, ["AA"])
 
     assert_items_equal(graph.in_nodes(node, use_ilocs=use_ilocs), expected_nodes)
     assert_items_equal(
@@ -849,7 +866,7 @@ def test_in_nodes_unweighted_hom(use_ilocs):
     )
     assert_items_equal(
         graph.in_nodes(
-            node, include_edge_weight=True, edge_types=["AA"], use_ilocs=use_ilocs
+            node, include_edge_weight=True, edge_types=edge_types, use_ilocs=use_ilocs
         ),
         [],
     )
@@ -861,6 +878,7 @@ def test_out_nodes_weighted_hin(use_ilocs):
     node = graph.node_ids_to_ilocs([1])[0] if use_ilocs else 1
     expected_nodes = graph.node_ids_to_ilocs([2, 3]) if use_ilocs else [2, 3]
     expected_weighted = zip(expected_nodes, [10.0, 10.0])
+    edge_types = _edge_types_or_ilocs(graph, use_ilocs, ["AA"])
 
     assert_items_equal(graph.out_nodes(node, use_ilocs=use_ilocs), expected_nodes)
     assert_items_equal(
@@ -869,7 +887,7 @@ def test_out_nodes_weighted_hin(use_ilocs):
     )
     assert_items_equal(
         graph.out_nodes(
-            node, include_edge_weight=True, edge_types=["AA"], use_ilocs=use_ilocs
+            node, include_edge_weight=True, edge_types=edge_types, use_ilocs=use_ilocs
         ),
         [],
     )
@@ -881,6 +899,7 @@ def test_out_nodes_unweighted_hom(use_ilocs):
     node = graph.node_ids_to_ilocs([1])[0] if use_ilocs else 1
     expected_nodes = graph.node_ids_to_ilocs([2, 3]) if use_ilocs else [2, 3]
     expected_weighted = zip(expected_nodes, [1, 1])
+    edge_types = _edge_types_or_ilocs(graph, use_ilocs, ["AB"])
 
     assert_items_equal(graph.out_nodes(node, use_ilocs=use_ilocs), expected_nodes)
     assert_items_equal(
@@ -889,7 +908,7 @@ def test_out_nodes_unweighted_hom(use_ilocs):
     )
     assert_items_equal(
         graph.out_nodes(
-            node, include_edge_weight=True, edge_types=["AB"], use_ilocs=use_ilocs
+            node, include_edge_weight=True, edge_types=edge_types, use_ilocs=use_ilocs
         ),
         [],
     )
