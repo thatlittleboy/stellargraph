@@ -574,7 +574,7 @@ class StellarGraph:
             if not use_ilocs:
                 filter_edge_types = self._edges.types.to_iloc(filter_edge_types)
             edge_type_ilocs = self._edges.type_ilocs[ilocs]
-            correct_type = np.isin(edge_type_ilocs, filter_edge_type_ilocs)
+            correct_type = np.isin(edge_type_ilocs, filter_edge_types)
 
             other_node = other_node[correct_type]
             if weights is not None:
