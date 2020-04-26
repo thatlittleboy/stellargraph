@@ -28,6 +28,7 @@ from ..test_utils.graphs import (
     example_hin_1_nx,
     example_hin_1,
     line_graph,
+    knowledge_graph,
 )
 
 from .. import test_utils
@@ -278,6 +279,32 @@ def test_node_ilocs_to_ids():
     expected_node_ids = [1, 2, 3, 4]
     node_ids = sg.node_ilocs_to_ids(node_ilocs)
     assert (node_ids == expected_node_ids).all()
+
+
+def test_node_type_names_to_from_ilocs():
+    sg = example_hin_1()
+
+    def both_ways(names, ilocs):
+        np.testing.assert_array_equal(sg.node_type_names_to_ilocs(names), ilocs)
+        np.testing.assert_array_equal(sg.node_type_ilocs_to_names(ilocs), names)
+
+    both_ways([], [])
+    both_ways(["A"], [0])
+    both_ways(["B", "A", "A", "B"], [1, 0, 0, 1])
+
+
+def test_edge_type_names_to_from_ilocs(knowledge_graph):
+    def both_ways(names, ilocs):
+        np.testing.assert_array_equal(
+            knowledge_graph.edge_type_names_to_ilocs(names), ilocs
+        )
+        np.testing.assert_array_equal(
+            knowledge_graph.edge_type_ilocs_to_names(ilocs), names
+        )
+
+    both_ways([], [])
+    both_ways(["W"], [0])
+    both_ways(["Z", "X", "W", "W", "Z", "Z"], [3, 1, 0, 0, 3, 3])
 
 
 def test_feature_conversion_from_nodes():
