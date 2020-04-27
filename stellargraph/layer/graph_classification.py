@@ -76,6 +76,9 @@ class GCNSupervisedGraphClassification:
             they must not depend on the ``nodes`` dimension or on the number of ``True`` values in
             ``mask``. ``pooling`` defaults to mean pooling via ``GlobalAveragePooling1D``.
 
+        pool_all_layers (bool, optional): which layers to pass to the pooling method: if ``True``,
+            pass the concatenation of the output of every GCN layer, otherwise pass only the output
+            of the last GCN layer.
         kernel_initializer (str or func, optional): The initialiser to use for the weights of each graph
             convolutional layer.
         kernel_regularizer (str or func, optional): The regulariser to use for the weights of each graph
@@ -98,6 +101,7 @@ class GCNSupervisedGraphClassification:
         bias=True,
         dropout=0.0,
         pooling=None,
+        pool_all_layers=False,
         kernel_initializer=None,
         kernel_regularizer=None,
         kernel_constraint=None,
@@ -126,6 +130,8 @@ class GCNSupervisedGraphClassification:
             self.pooling = pooling
         else:
             self.pooling = GlobalAveragePooling1D(data_format="channels_last")
+
+        self.pool_all_layers = pool_all_layers
 
         # Initialize a stack of GraphConvolution layers
         n_layers = len(self.layer_sizes)
@@ -168,12 +174,18 @@ class GCNSupervisedGraphClassification:
         x_in, mask, As = x
         h_layer = x_in
 
+        gcn_layers = []
+
         for layer in self._layers:
             if isinstance(layer, GraphConvolution):
                 h_layer = layer([h_layer, As])
+                gcn_layers.append(h_layer)
             else:
                 # For other (non-graph) layers only supply the input tensor
                 h_layer = layer(h_layer)
+
+        if self.pool_all_layers:
+            h_layer = tf.concat(gcn_layers, axis=-1)
 
         # mask to ignore the padded values
         h_layer = self.pooling(h_layer, mask=mask)
@@ -278,20 +290,6 @@ class DeepGraphConvolutionalNeuralNetwork(GCNSupervisedGraphClassification):
         bias_regularizer=None,
         bias_constraint=None,
     ):
-        super().__init__(
-            layer_sizes=layer_sizes,
-            activations=activations,
-            generator=generator,
-            bias=bias,
-            dropout=dropout,
-            kernel_initializer=kernel_initializer,
-            kernel_regularizer=kernel_regularizer,
-            kernel_constraint=kernel_constraint,
-            bias_initializer=bias_initializer,
-            bias_regularizer=bias_regularizer,
-            bias_constraint=bias_constraint,
-        )
-
         if not isinstance(k, int):
             raise TypeError(
                 f"k: expected k to be integer type, found {type(k).__name__}."
@@ -300,44 +298,20 @@ class DeepGraphConvolutionalNeuralNetwork(GCNSupervisedGraphClassification):
         if k <= 0:
             raise ValueError(f"k: expected k to be strictly positive, found {k}")
 
-        self.k = k
+        pooling = SortPooling(k=k, flatten_output=True)
 
-        # Add the SortPooling layer
-        self._layers.append(SortPooling(k=self.k, flatten_output=True))
-
-    def __call__(self, x):
-        """
-        Apply a stack of :class:`GraphConvolution` layers to the inputs followed by a single
-        SortPooling layer.
-        The input tensors are expected to be a list of the following:
-        [
-            Node features shape (batch size, N, F),
-            Mask (batch size, N ),
-            Adjacency matrices (batch size, N, N),
-        ]
-        where N is the number of nodes and F the number of input features
-
-        Args:
-            x (Tensor): input tensors
-
-        Returns:
-            Output tensor
-        """
-        gcn_layers = []
-
-        x_in, mask, As = x
-        h_layer = x_in
-
-        for layer in self._layers:
-            if isinstance(layer, GraphConvolution):
-                h_layer = layer([h_layer, As])
-                gcn_layers.append(h_layer)
-            elif isinstance(layer, SortPooling):
-                # concatenate the GCN output tensors and use as input to the SortPooling layer
-                h_layer = tf.concat(gcn_layers, axis=-1)
-                h_layer = layer([h_layer, mask])
-            else:
-                # For other (non-graph) layers only supply the input tensor
-                h_layer = layer(h_layer)
-
-        return h_layer
+        super().__init__(
+            layer_sizes=layer_sizes,
+            activations=activations,
+            generator=generator,
+            bias=bias,
+            dropout=dropout,
+            pooling=pooling,
+            pool_all_layers=True,
+            kernel_initializer=kernel_initializer,
+            kernel_regularizer=kernel_regularizer,
+            kernel_constraint=kernel_constraint,
+            bias_initializer=bias_initializer,
+            bias_regularizer=bias_regularizer,
+            bias_constraint=bias_constraint,
+        )
