@@ -27,6 +27,7 @@ graphs = [
     example_graph_random(feature_size=4, n_nodes=6),
     example_graph_random(feature_size=4, n_nodes=5),
     example_graph_random(feature_size=4, n_nodes=3),
+    example_graph_random(feature_size=4, n_nodes=0, n_edges=0),
 ]
 
 
@@ -187,3 +188,21 @@ def test_generator_adj_normalisation(symmetric_normalization):
         adj_norm = inv_deg.dot(adj)
 
     assert np.allclose(adj_norm_seq, adj_norm)
+
+def test_generator_empty_graph():
+    generator = PaddedGraphGenerator(graphs=graphs)
+    seq_alone = generator.flow([3], batch_size=1)
+    assert len(seq_alone) == 1
+    (feats, masks, adj_graphs), _ = seq_alone[0]
+    assert feats.shape == (1, 0, 4)
+    assert masks.shape == (1, 0)
+    assert adj_graphs.shape == (1, 0, 0)
+
+    seq_together = generator.flow([2, 3], batch_size=2)
+    assert len(seq_together) == 1
+    (feats, masks, adj_graphs), _ = seq_together[0]
+    assert feats.shape == (2, 3, 4)
+    assert masks.shape == (2, 3)
+    assert adj_graphs.shape == (2, 3, 3)
+    np.testing.assert_array_equal(masks, [[True] * 3, [False] * 3])
+    np.testing.assert_array_equal(adj_graphs[1, ...], [[0] * 3] * 3)
