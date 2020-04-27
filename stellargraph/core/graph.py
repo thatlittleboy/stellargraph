@@ -755,7 +755,7 @@ class StellarGraph:
         Returns:
             Numpy array containing the ilocs of the requested node types.
         """
-        return self._nodes.types.to_iloc(node_type_names)
+        return self._nodes.types.to_iloc(node_type_names, strict=True)
 
     def node_type_ilocs_to_names(self, node_type_ilocs):
         """
@@ -779,7 +779,7 @@ class StellarGraph:
         Returns:
             Numpy array containing the ilocs of the requested edge types.
         """
-        return self._edges.types.to_iloc(edge_type_names)
+        return self._edges.types.to_iloc(edge_type_names, strict=True)
 
     def edge_type_ilocs_to_names(self, edge_type_ilocs):
         """

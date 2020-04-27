@@ -292,6 +292,15 @@ def test_node_type_names_to_from_ilocs():
     both_ways(["A"], [0])
     both_ways(["B", "A", "A", "B"], [1, 0, 0, 1])
 
+    with pytest.raises(KeyError, match="'C'.*0"):
+        sg.node_type_names_to_ilocs(["C", "A", 0])
+
+    with pytest.raises(IndexError, match="index 100 .* size 2"):
+        sg.node_type_ilocs_to_names([100])
+
+    with pytest.raises(IndexError, match="index -100 .* size 2"):
+        sg.node_type_ilocs_to_names([-100])
+
 
 def test_edge_type_names_to_from_ilocs(knowledge_graph):
     def both_ways(names, ilocs):
@@ -305,6 +314,15 @@ def test_edge_type_names_to_from_ilocs(knowledge_graph):
     both_ways([], [])
     both_ways(["W"], [0])
     both_ways(["Z", "X", "W", "W", "Z", "Z"], [3, 1, 0, 0, 3, 3])
+
+    with pytest.raises(KeyError, match="'U'.*0"):
+        knowledge_graph.edge_type_names_to_ilocs(["U", "W", 0])
+
+    with pytest.raises(IndexError, match="index 100 .* size 2"):
+        sg.edge_type_ilocs_to_names([100])
+
+    with pytest.raises(IndexError, match="index -100 .* size 2"):
+        sg.edge_type_ilocs_to_names([-100])
 
 
 def test_feature_conversion_from_nodes():
